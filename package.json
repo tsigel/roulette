@@ -1,0 +1,49 @@
+{
+  "name": "roulette",
+  "version": "0.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tsigel/roulette.git"
+  },
+  "author": "tsddaniil@gmail.com",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tsigel/roulette/issues"
+  },
+  "homepage": "https://github.com/tsigel/roulette#readme",
+  "dependencies": {
+    "@types/node": "^10.12.18",
+    "@waves/signature-generator": "^4.0.0",
+    "ts-utils": "^6.0.6"
+  },
+  "devDependencies": {
+    "@types/jest": "^23.3.13",
+    "jest": "^24.0.0",
+    "ts-jest": "^23.10.5",
+    "typescript": "^3.2.4"
+  },
+  "jest": {
+    "collectCoverage": true,
+    "testEnvironment": "jest-environment-node",
+    "coveragePathIgnorePatterns": [
+      "/node_modules/",
+      "/test/"
+    ],
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js"
+    ],
+    "transform": {
+      "^.+\\.(ts|tsx)$": "ts-jest"
+    },
+    "testMatch": [
+      "**/test/**/*.spec.(ts|tsx|js)"
+    ]
+  }
+}
