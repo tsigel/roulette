@@ -11,17 +11,17 @@ export interface IStorage<T> {
     set<K extends keyof T>(key: K): (value: T[K]) => Promise<void>;
 }
 
-const path = (key: string) => join(process.cwd(), 'storageDist', `${key.replace(/\./g, '-')}.json`);
+const path = (key: number) => join(process.cwd(), 'storageDist', `${String(key)}.json`);
 
-export class Storage<T> implements IStorage<Record<string, Array<Game>>> {
+export class Storage implements IStorage<Record<number, Array<Game>>> {
 
-    get(key: string): Promise<Array<Game>> {
+    get(key: number): Promise<Array<Game>> {
         return readJSON(path(key))
             .then(list => list.map((item: Game) => new Game(item.time, item.result)))
             .catch(() => []);
     }
 
-    set(key: string, list?: Array<Game>): any {
+    set(key: number, list?: Array<Game>): any {
         if (arguments.length > 1) {
             return outputJSON(path(key), list);
         } else {

@@ -1,4 +1,4 @@
-import { DAY_TIME_PATTEN, GAME_INTERVAL } from './constants';
+import { GAME_INTERVAL } from './constants';
 import * as moment from 'moment';
 import { generate } from './utils/';
 import { Game } from './models';
@@ -16,7 +16,7 @@ export function createGameList(start?: number): Promise<Array<Game>> {
     const dateList = [];
 
     do {
-        dateList.push(time.format(DAY_TIME_PATTEN));
+        dateList.push(time.toDate().getTime());
         time = moment(time.toDate().getTime() + GAME_INTERVAL);
     } while (time.day() === now.day());
 

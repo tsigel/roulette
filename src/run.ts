@@ -1,7 +1,6 @@
 import {
     Storage,
     createGameList,
-    DAY_PATTEN,
     sign,
     tap,
     Game,
@@ -26,13 +25,13 @@ const seed = new Seed(process.argv[2]);
 const address = seed.address;
 const url = (path: string) => `${node}${path}`;
 
-let lastGameTime: string | null = null;
+let lastGameTime: number | null = null;
 
 console.log(`Seed is: "${seed.phrase}"`);
 console.log(`Address is: "${seed.address}"`);
 
 function startDay(): Promise<void> {
-    const date = moment().format(DAY_PATTEN);
+    const date = moment(Date.now()).startOf('day').toDate().getTime();
 
     console.log(`Start of day ${date}`);
 
@@ -77,23 +76,23 @@ function startDay(): Promise<void> {
 }
 
 
-function liveLoop(date: string): Promise<void> {
+function liveLoop(date: number): Promise<void> {
 
-    const time = Date.now();
-    const dateString = moment(time).format(DAY_PATTEN);
-
-    if (dateString !== date) {
+    if (moment(Date.now()).startOf('day').toDate().getTime() !== date) {
         return startDay();
     }
 
-    return storage.get(moment().format(DAY_PATTEN))
+    debugger;
+    const time = Date.now();
+
+    return storage.get(date)
         .then(list => {
             if (!lastGameTime) {
-                return list.filter(game => time > moment(game.time, DAY_TIME_PATTEN).toDate().getTime());
+                return list.filter(game => time > game.time);
             }
-            const nextGameTime = moment(lastGameTime, DAY_TIME_PATTEN).add(GAME_INTERVAL, 'milliseconds');
-            const nextGame = list.find(game => game.time === nextGameTime.format(DAY_TIME_PATTEN));
-            return time > nextGameTime.toDate().getTime() ? nextGame ? [nextGame] : [] : [];
+            const nextGameTime = moment(lastGameTime, DAY_TIME_PATTEN).add(GAME_INTERVAL, 'milliseconds').toDate().getTime();
+            const nextGame = list.find(game => game.time === nextGameTime);
+            return time > nextGameTime ? nextGame ? [nextGame] : [] : [];
         })
         .then(list => {
             lastGameTime = list.length ? list[list.length - 1].time : lastGameTime;
@@ -105,9 +104,6 @@ function liveLoop(date: string): Promise<void> {
 
 
 function sendList(list: Array<Game>): Promise<void> {
-
-    console.log(`Send list ${list}`);
-
     return Promise.all([
         map<Game, Game | null>(isGameInBlockChain)(list)
             .then((list: Array<Game | null>) => list.filter(isNotEmpty)),
@@ -117,8 +113,6 @@ function sendList(list: Array<Game>): Promise<void> {
         if (!list.length) {
             return Promise.resolve();
         }
-
-        console.log(JSON.stringify(list, null, 4));
 
         return Promise.all(splitEvery(33, list).map(list => {
             const dataEntries = list.reduce((acc, game) => {
@@ -134,42 +128,36 @@ function sendList(list: Array<Game>): Promise<void> {
                     cell.isFirstLine ? 0 : cell.isMiddleLine ? 1 : 2
                 ];
                 acc.push({
-                    key: game.time,
+                    key: String(game.time),
                     type: 'string',
                     value: game.result.toString()
                 });
                 acc.push({
-                    key: `${libs.base58.encode(utils.convert.stringToByteArray(game.time) as any)}height`,
+                    key: `${libs.base58.encode(utils.convert.stringToByteArray(String(game.time)) as any)}height`,
                     type: 'integer',
                     value: height
                 });
                 acc.push({
-                    key: libs.base58.encode(utils.convert.stringToByteArray(game.time) as any),
+                    key: libs.base58.encode(utils.convert.stringToByteArray(String(game.time)) as any),
                     type: 'binary',
                     value: libs.base64.fromByteArray(Uint8Array.from(bytes))
                 });
                 return acc;
             }, [] as any);
             const tx = data({
-                timestamp: lastGameTime ? moment(lastGameTime as string, DAY_TIME_PATTEN).toDate().getTime() : undefined,
+                timestamp: lastGameTime ? lastGameTime : undefined,
                 data: dataEntries
             }, seed.phrase);
 
-            console.log(JSON.stringify(tx, null, 4));
-
             return post(url('/transactions/broadcast'))
                 .retry(3)
-                .send(tx)
-                .then(
-                    () => console.log('Success'),
-                    e => console.error(e)
-                );
+                .send(tx);
         }))
             .then(() => Promise.resolve());
     });
 }
 
-startDay();
+wait(5000).then(startDay);
 
 function height(): Promise<number> {
     return get(url('/blocks/height'))
@@ -177,7 +165,7 @@ function height(): Promise<number> {
 }
 
 function isGameInBlockChain(game: Game): Promise<Game | null> {
-    return get(url(`/addresses/data/${address}/${encodeURIComponent(game.time)}`))
+    return get(url(`/addresses/data/${address}/${game.time}`))
         .then(() => null)
         .catch(() => game);
 }
