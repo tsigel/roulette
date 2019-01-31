@@ -28,9 +28,14 @@ const url = (path: string) => `${node}${path}`;
 
 let lastGameTime: string | null = null;
 
+console.log(`Seed is: "${seed.phrase}"`);
+console.log(`Address is: "${seed.address}"`);
 
 function startDay(): Promise<void> {
     const date = moment().format(DAY_PATTEN);
+
+    console.log(`Start of day ${date}`);
+
     return storage.get(date)
         .then(list => {
             if (!list.length) {
@@ -42,9 +47,15 @@ function startDay(): Promise<void> {
         .then(list => {
             const key = `${date} result signature`;
             return get(url(`/addresses/data/${address}/${encodeURIComponent(key)}`))
-                .catch((error) => {
+                .catch(() => {
+
+                    console.log('Has no game signature');
+
                     sign(list.map(game => game.result), seed)
                         .then(signature => {
+
+                            console.log(`Game signature is ${signature}`);
+
                             const tx = data({
                                 data: [
                                     {
@@ -57,6 +68,7 @@ function startDay(): Promise<void> {
                             return post(url('/transactions/broadcast'))
                                 .retry(3)
                                 .send(tx)
+                                .then(tap(() => console.log('Success broadcast signature!')))
                                 .then(() => Promise.resolve());
                         });
                 });
@@ -66,12 +78,17 @@ function startDay(): Promise<void> {
 
 
 function liveLoop(date: string): Promise<void> {
+
+    console.log(`Live loop for ${date}`);
+
     const time = Date.now();
     const dateString = moment(time).format(DAY_PATTEN);
 
     if (dateString !== date) {
         return startDay();
     }
+
+    console.log('The same day');
 
     return storage.get(moment().format(DAY_PATTEN))
         .then(list => {
@@ -92,11 +109,16 @@ function liveLoop(date: string): Promise<void> {
 
 
 function sendList(list: Array<Game>): Promise<void> {
+
+    console.log(`Send list ${list}`);
+
     return Promise.all([
         map<Game, Game | null>(isGameInBlockchain)(list)
             .then((list: Array<Game | null>) => list.filter(isNotEmpty)),
         height()
     ]).then(([list, height]) => {
+
+        console.log(`List for broadcast ${list}`);
 
         if (!list.length) {
             return Promise.resolve();
