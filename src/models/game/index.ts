@@ -1,10 +1,11 @@
 export class Game {
 
-    public readonly timestamp: number;
+    public readonly time: string;
     public readonly result: number;
 
-    constructor(timestamp: number, result: number) {
-        this.timestamp = timestamp;
+    constructor(date: string, result: number) {
+        this.time = date;
         this.result = result;
     }
+
 }

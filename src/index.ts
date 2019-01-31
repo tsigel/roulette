@@ -1,7 +1,7 @@
-import { generate, getGamesCount, getNextGame } from './utils';
+import { DAY_TIME_PATTEN, GAME_INTERVAL } from './constants';
+import * as moment from 'moment';
+import { generate } from './utils/';
 import { Game } from './models';
-import { GAME_INTERVAL } from './constants';
-import { setGameList } from './storage';
 
 export * from './cell';
 export * from './utils';
@@ -9,20 +9,18 @@ export * from './constants';
 export * from './storage';
 export * from './models';
 
-export function createGameList(start: number): Promise<void> {
-    const date = start ? new Date(start) : new Date();
-    date.setHours(0, 0, 0, 0);
-    const nextGameData = getNextGame(Date.now());
-    const gamesCount = getGamesCount();
-    let time = nextGameData.time;
-    const list = [];
-    for (let i = nextGameData.index; i < gamesCount; i++) {
-        list.push(time);
-        time += GAME_INTERVAL;
 
-    }
-    console.log(gamesCount, nextGameData.index);
-    const promiseList = list.map(time => generate().then(result => new Game(time, result)));
-    return Promise.all(promiseList)
-        .then(list => setGameList(date.getTime(), list));
+export function createGameList(start?: number): Promise<Array<Game>> {
+    const now = moment(start);
+    let time = moment(start).startOf('day');
+    const dateList = [];
+
+    do {
+        dateList.push(time.format(DAY_TIME_PATTEN));
+        time = moment(time.toDate().getTime() + GAME_INTERVAL);
+    } while (time.day() === now.day());
+
+    const promiseList = dateList.map(date => generate().then(result => new Game(date, result)));
+    return Promise.all(promiseList);
 }
+

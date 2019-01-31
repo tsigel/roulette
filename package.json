@@ -17,9 +17,17 @@
   },
   "homepage": "https://github.com/tsigel/roulette#readme",
   "dependencies": {
+    "@types/fs-extra": "^5.0.4",
+    "@types/moment": "^2.13.0",
     "@types/node": "^10.12.18",
+    "@types/ramda": "^0.25.47",
+    "@types/superagent": "^3.8.6",
     "@waves/signature-generator": "^4.0.0",
-    "ts-utils": "^6.0.6"
+    "fs-extra": "^7.0.1",
+    "moment": "^2.24.0",
+    "ramda": "^0.26.1",
+    "superagent": "^4.1.0",
+    "waves-transactions": "^3.0.13"
   },
   "devDependencies": {
     "@types/jest": "^23.3.13",
