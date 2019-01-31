@@ -1,15 +1,4 @@
-import {
-    Storage,
-    createGameList,
-    sign,
-    tap,
-    Game,
-    isNotEmpty,
-    wait,
-    DAY_TIME_PATTEN,
-    map,
-    GAME_INTERVAL, CELLS
-} from './';
+import { Storage, createGameList, sign, tap, Game, isNotEmpty, wait, map, GAME_INTERVAL, CELLS } from './';
 import { get, post, Response } from 'superagent';
 import * as moment from 'moment';
 import { Seed, libs, config, TESTNET_BYTE, utils } from '@waves/signature-generator';
@@ -82,7 +71,6 @@ function liveLoop(date: number): Promise<void> {
         return startDay();
     }
 
-    debugger;
     const time = Date.now();
 
     return storage.get(date)
@@ -90,9 +78,9 @@ function liveLoop(date: number): Promise<void> {
             if (!lastGameTime) {
                 return list.filter(game => time > game.time);
             }
-            const nextGameTime = moment(lastGameTime, DAY_TIME_PATTEN).add(GAME_INTERVAL, 'milliseconds').toDate().getTime();
-            const nextGame = list.find(game => game.time === nextGameTime);
-            return time > nextGameTime ? nextGame ? [nextGame] : [] : [];
+            const nextGameTime = lastGameTime + GAME_INTERVAL;
+            return list.filter(game => nextGameTime - GAME_INTERVAL * 3 < game.time && game.time < time);
+
         })
         .then(list => {
             lastGameTime = list.length ? list[list.length - 1].time : lastGameTime;
@@ -154,10 +142,13 @@ function sendList(list: Array<Game>): Promise<void> {
                 .send(tx);
         }))
             .then(() => Promise.resolve());
-    });
+    })
+        .catch(e => {
+            console.error(e);
+        });
 }
 
-wait(5000).then(startDay);
+startDay();
 
 function height(): Promise<number> {
     return get(url('/blocks/height'))
