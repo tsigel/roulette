@@ -1,12 +1,14 @@
-import { Storage, createGameList, sign, tap, Game, isNotEmpty, wait, map, GAME_INTERVAL, CELLS } from './';
+import { Storage, createGameList, sign, tap, Game, isNotEmpty, wait, map, GAME_INTERVAL, CELLS, toBase58 } from './';
 import { get, post, Response } from 'superagent';
 import * as moment from 'moment';
-import { Seed, libs, config, TESTNET_BYTE, utils } from '@waves/signature-generator';
+import { Seed, libs, config, TESTNET_BYTE } from '@waves/signature-generator';
 import { data } from 'waves-transactions';
 import { splitEvery } from 'ramda';
 
 
 config.set({ networkByte: TESTNET_BYTE });
+
+console.log(process.argv[2]);
 
 const storage = new Storage();
 const node = 'https://pool.testnet.wavesnodes.com';
@@ -102,7 +104,7 @@ function sendList(list: Array<Game>): Promise<void> {
             return Promise.resolve();
         }
 
-        return Promise.all(splitEvery(33, list).map(list => {
+        return map((list: Array<Game>) => {
             const dataEntries = list.reduce((acc, game) => {
                 const boolToByte = (value: boolean): number => value ? 1 : 0;
                 const cell = CELLS[game.result];
@@ -121,12 +123,12 @@ function sendList(list: Array<Game>): Promise<void> {
                     value: game.result.toString()
                 });
                 acc.push({
-                    key: `${libs.base58.encode(utils.convert.stringToByteArray(String(game.time)) as any)}height`,
+                    key: `${toBase58(String(game.time))}height`,
                     type: 'integer',
                     value: height
                 });
                 acc.push({
-                    key: libs.base58.encode(utils.convert.stringToByteArray(String(game.time)) as any),
+                    key: toBase58(String(game.time)),
                     type: 'binary',
                     value: libs.base64.fromByteArray(Uint8Array.from(bytes))
                 });
@@ -139,16 +141,21 @@ function sendList(list: Array<Game>): Promise<void> {
 
             return post(url('/transactions/broadcast'))
                 .retry(3)
-                .send(tx);
-        }))
-            .then(() => Promise.resolve());
-    })
-        .catch(e => {
-            console.error(e);
-        });
+                .send(tx)
+                .then(() => waitTransaction(tx));
+        })(splitEvery(33, list)).then(() => Promise.resolve());
+    });
 }
 
 startDay();
+
+function waitTransaction(tx: { id: string }): Promise<void> {
+    return wait(2000)
+        .then(() => get(url(`/transactions/unconfirmed/info/${tx.id}`)))
+        .then(() => waitTransaction(tx))
+        .catch(() => get(url(`/transactions/info/${tx.id}`)))
+        .then(() => Promise.resolve());
+}
 
 function height(): Promise<number> {
     return get(url('/blocks/height'))

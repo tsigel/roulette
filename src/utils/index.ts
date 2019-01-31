@@ -1,3 +1,6 @@
+import { utils, libs } from '@waves/signature-generator';
+
+
 export * from './sign';
 export * from './generate';
 export * from './time';
@@ -37,8 +40,6 @@ export function map<T, R>(cb: (data: T) => Promise<R>): (list: Array<T>) => Prom
     });
 }
 
-export function parseArgs(args: Array<string>): Record<string, string> {
-    return args.reduce((acc, item) => {
-
-    }, Object.create(null));
+export function toBase58(data: string): string {
+    return libs.base58.encode(utils.convert.stringToByteArray(data) as any);
 }
