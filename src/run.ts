@@ -109,7 +109,7 @@ function sendList(list: Array<Game>): Promise<void> {
     console.log(`Send list ${list}`);
 
     return Promise.all([
-        map<Game, Game | null>(isGameInBlockchain)(list)
+        map<Game, Game | null>(isGameInBlockChain)(list)
             .then((list: Array<Game | null>) => list.filter(isNotEmpty)),
         height()
     ]).then(([list, height]) => {
@@ -117,6 +117,8 @@ function sendList(list: Array<Game>): Promise<void> {
         if (!list.length) {
             return Promise.resolve();
         }
+
+        console.log(JSON.stringify(list, null, 4));
 
         return Promise.all(splitEvery(33, list).map(list => {
             const dataEntries = list.reduce((acc, game) => {
@@ -174,7 +176,7 @@ function height(): Promise<number> {
         .then((response: Response & { body: { height: number } }) => response.body.height);
 }
 
-function isGameInBlockchain(game: Game): Promise<Game | null> {
+function isGameInBlockChain(game: Game): Promise<Game | null> {
     return get(url(`/addresses/data/${address}/${encodeURIComponent(game.time)}`))
         .then(() => null)
         .catch(() => game);
