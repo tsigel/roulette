@@ -79,16 +79,12 @@ function startDay(): Promise<void> {
 
 function liveLoop(date: string): Promise<void> {
 
-    console.log(`Live loop for ${date}`);
-
     const time = Date.now();
     const dateString = moment(time).format(DAY_PATTEN);
 
     if (dateString !== date) {
         return startDay();
     }
-
-    console.log('The same day');
 
     return storage.get(moment().format(DAY_PATTEN))
         .then(list => {
@@ -117,8 +113,6 @@ function sendList(list: Array<Game>): Promise<void> {
             .then((list: Array<Game | null>) => list.filter(isNotEmpty)),
         height()
     ]).then(([list, height]) => {
-
-        console.log(`List for broadcast ${list}`);
 
         if (!list.length) {
             return Promise.resolve();
@@ -158,9 +152,16 @@ function sendList(list: Array<Game>): Promise<void> {
                 timestamp: lastGameTime ? moment(lastGameTime as string, DAY_TIME_PATTEN).toDate().getTime() : undefined,
                 data: dataEntries
             }, seed.phrase);
+
+            console.log(JSON.stringify(tx, null, 4));
+
             return post(url('/transactions/broadcast'))
                 .retry(3)
-                .send(tx);
+                .send(tx)
+                .then(
+                    () => console.log('Success'),
+                    e => console.error(e)
+                );
         }))
             .then(() => Promise.resolve());
     });
