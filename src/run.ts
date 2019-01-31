@@ -150,7 +150,7 @@ function sendList(list: Array<Game>): Promise<void> {
 startDay();
 
 function waitTransaction(tx: { id: string }): Promise<void> {
-    return wait(2000)
+    return wait(1000)
         .then(() => get(url(`/transactions/unconfirmed/info/${tx.id}`)))
         .then(() => waitTransaction(tx))
         .catch(() => get(url(`/transactions/info/${tx.id}`)))
