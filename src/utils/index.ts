@@ -1,5 +1,5 @@
 import { utils, libs } from '@waves/signature-generator';
-
+import * as moment from 'moment';
 
 export * from './sign';
 export * from './generate';
@@ -42,4 +42,12 @@ export function map<T, R>(cb: (data: T) => Promise<R>): (list: Array<T>) => Prom
 
 export function toBase58(data: string): string {
     return libs.base58.encode(utils.convert.stringToByteArray(data) as any);
+}
+
+export function getStartOfDay(time?: number): number {
+    return moment(moment(time).startOf('day').toDate().getTime() - new Date().getTimezoneOffset() * 60 * 1000).toDate().getTime();
+}
+
+export function isTheSameDay(time?: number): boolean {
+    return getStartOfDay(time) === getStartOfDay();
 }

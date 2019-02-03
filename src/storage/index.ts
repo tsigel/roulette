@@ -15,17 +15,25 @@ const path = (key: number) => join(process.cwd(), 'storageDist', `${String(key)}
 
 export class Storage implements IStorage<Record<number, Array<Game>>> {
 
+    _storage: Record<number, Array<Game>> = Object.create(null);
+
     get(key: number): Promise<Array<Game>> {
-        return readJSON(path(key))
+        return this._storage[key] ? Promise.resolve(this._storage[key]) : readJSON(path(key))
             .then(list => list.map((item: Game) => new Game(item.time, item.result)))
             .catch(() => []);
     }
 
     set(key: number, list?: Array<Game>): any {
-        if (arguments.length > 1) {
+
+        const set = (key: number, list: Array<Game>) => {
+            this._storage[key] = list;
             return outputJSON(path(key), list);
+        };
+
+        if (list) {
+            return set(key, list);
         } else {
-            return (value: Array<Game>) => outputJSON(path(key), value);
+            return (list: Array<Game>) => set(key, list);
         }
     }
 
