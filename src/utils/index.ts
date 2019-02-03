@@ -39,14 +39,22 @@ export function map<T, R>(cb: (data: T) => Promise<R>): (list: Array<T>) => Prom
     });
 }
 
+export function now(): number {
+    return Date.now() - timeOffset();
+}
+
+export function timeOffset() {
+    return new Date().getTimezoneOffset() * 1000;
+}
+
 export function toBase58(data: string): string {
     return libs.base58.encode(utils.convert.stringToByteArray(data) as any);
 }
 
 export function getStartOfDay(time?: number): number {
     const date = new Date(time || Date.now());
-    date.setHours(0, 0, 0, 0);
-    return date.getTime() - (date.getTimezoneOffset() * 1000);
+    date.setUTCHours(0, 0, 0, 0);
+    return date.getTime();
 }
 
 export function isTheSameDay(time?: number, compareDate?: number): boolean {

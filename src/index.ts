@@ -44,13 +44,11 @@ export function createAPI({ storage, seed, node }: IParams) {
     }
 
     const liveLoop = (date: number) => {
-        const today = getStartOfDay()
+        const time = Date.now();
 
-        if (today !== date) {
+        if (!isTheSameDay(time, date)) {
             return Promise.reject(new Error('Wrong date!'));
         }
-
-        const time = Date.now();
 
         return storage.get(date)
             .then(list => {
