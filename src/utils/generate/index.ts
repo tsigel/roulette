@@ -2,7 +2,7 @@ import { ROULETTE_COUNT } from '../../constants';
 import { randomBytes } from 'crypto';
 
 
-const getRandom = getRandomIntFacrory(0, ROULETTE_COUNT);
+const getRandom = getRandomIntFactory(0, ROULETTE_COUNT);
 
 export function generate(): Promise<number> {
     return random();
@@ -10,15 +10,15 @@ export function generate(): Promise<number> {
 
 const random = () => new Promise<number>(resolve => {
     randomBytes(8, function (ex, buffer) {
-        var hex = buffer.toString('hex');
-        var integer = parseInt(hex, 16);
-        var random = integer / 0xffffffffffffffff;
+        const hex = buffer.toString('hex');
+        const integer = parseInt(hex, 16);
+        const random = integer / 0xffffffffffffffff;
 
         resolve(getRandom(random));
     });
 });
 
-function getRandomIntFacrory(min: number, max: number) {
+function getRandomIntFactory(min: number, max: number) {
     return (random: number) => {
         min = Math.ceil(min);
         max = Math.floor(max);

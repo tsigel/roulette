@@ -1,5 +1,4 @@
 import { utils, libs } from '@waves/signature-generator';
-import * as moment from 'moment';
 
 export * from './sign';
 export * from './generate';
@@ -45,9 +44,11 @@ export function toBase58(data: string): string {
 }
 
 export function getStartOfDay(time?: number): number {
-    return moment(moment(time).startOf('day').toDate().getTime() - new Date().getTimezoneOffset() * 60 * 1000).toDate().getTime();
+    const date = new Date(time || Date.now());
+    date.setHours(0, 0, 0, 0);
+    return date.getTime() - (date.getTimezoneOffset() * 1000);
 }
 
-export function isTheSameDay(time?: number): boolean {
-    return getStartOfDay(time) === getStartOfDay();
+export function isTheSameDay(time?: number, compareDate?: number): boolean {
+    return getStartOfDay(time) === getStartOfDay(compareDate);
 }

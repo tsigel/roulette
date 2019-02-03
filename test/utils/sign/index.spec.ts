@@ -11,7 +11,7 @@ describe('Sign', () => {
             const result = [
                 ...[0, list.length],
                 ...list
-            ]
+            ];
             expect(bytes).toEqual(Uint8Array.from(result));
             done();
         });

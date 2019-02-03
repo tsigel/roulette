@@ -1,4 +1,4 @@
-import { createAPI, getStartOfDay, wait } from './index';
+import { createAPI, getStartOfDay, isTheSameDay, wait } from './index';
 import { Storage } from './storage';
 import { Seed, config, TESTNET_BYTE } from '@waves/signature-generator';
 
@@ -20,7 +20,7 @@ let date: number | null = null;
 const run = () => {
     const today = getStartOfDay();
 
-    if (!date && date !== today) {
+    if (!date || !isTheSameDay(today, date)) {
         api.startDay(today)
             .then(() => (date = today))
             .then(run, run);

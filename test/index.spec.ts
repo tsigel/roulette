@@ -1,4 +1,4 @@
-import { createGameList, GAME_INTERVAL } from '../src';
+import { createGameList, DAY_LENGTH, GAME_INTERVAL } from '../src';
 
 
 const time = 1548596684204;
@@ -9,9 +9,10 @@ describe('Index file', () => {
     it('Create game list', done => {
 
         createGameList(time)
-            .then((list) => {
-                const count = Math.floor(1000 * 60 * 60 * 24 / GAME_INTERVAL);
-                expect(list.length).toBe(count);
+            .then(list => {
+                const count = Math.floor(DAY_LENGTH / GAME_INTERVAL);
+                expect(list.length).toEqual(count);
+                done();
             });
 
     });
