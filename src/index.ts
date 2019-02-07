@@ -30,7 +30,8 @@ export function createAPI({ storage, seed, node }: IParams) {
         .then(signature => {
             return post(url('/transactions/broadcast'))
                 .retry(3)
-                .send(data({ data: [{ key: signKey(date), type: 'string', value: signature }] }, phrase))
+                .send(data({ data: [{ key: signKey(date), type: 'string', value: signature }], timestamp: date }, phrase))
+                .then(response => waitTransaction(response.body))
                 .then(tap(() => console.log('Success broadcast signature!')))
                 .then(() => list)
                 .catch(catchError);
@@ -143,7 +144,7 @@ export function createAPI({ storage, seed, node }: IParams) {
         console.error('Request Error!');
         console.error('Status: ', path(['status'], e));
         console.error('Method: ', path(['response', 'req', 'method'], e));
-        console.error('Method: ', path(['response', 'req', 'url'], e));
+        console.error('Url: ', path(['response', 'req', 'url'], e));
 
         const message = tryToParseMessage(e);
 
