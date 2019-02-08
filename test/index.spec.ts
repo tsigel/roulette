@@ -10,7 +10,7 @@ describe('Index file', () => {
 
         createGameList(time)
             .then(list => {
-                const count = Math.floor(DAY_LENGTH / GAME_INTERVAL);
+                const count = Math.floor((DAY_LENGTH / GAME_INTERVAL) - 1);
                 expect(list.length).toEqual(count);
                 done();
             });

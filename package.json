@@ -41,7 +41,8 @@
     "testEnvironment": "jest-environment-node",
     "coveragePathIgnorePatterns": [
       "/node_modules/",
-      "/test/"
+      "/test/",
+      "/dist/"
     ],
     "moduleFileExtensions": [
       "ts",
