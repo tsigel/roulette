@@ -23,6 +23,7 @@
     "@types/ramda": "^0.25.47",
     "@types/superagent": "^3.8.6",
     "@waves/signature-generator": "^4.0.0",
+    "@waves/waves-transactions": "^3.0.22",
     "fs-extra": "^7.0.1",
     "moment": "^2.24.0",
     "ramda": "^0.26.1",

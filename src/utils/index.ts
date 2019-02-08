@@ -2,7 +2,6 @@ import { utils, libs } from '@waves/signature-generator';
 
 export * from './sign';
 export * from './generate';
-export * from './time';
 
 export function tap<T>(callback: (data: T) => any): (data: T) => T {
     return (data: T) => {
@@ -37,14 +36,6 @@ export function map<T, R>(cb: (data: T) => Promise<R>): (list: Array<T>) => Prom
 
         loop();
     });
-}
-
-export function now(): number {
-    return Date.now() - timeOffset();
-}
-
-export function timeOffset() {
-    return new Date().getTimezoneOffset() * 1000;
 }
 
 export function toBase58(data: string): string {

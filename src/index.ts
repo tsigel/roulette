@@ -15,7 +15,7 @@ export * from './storage';
 export * from './models';
 
 
-export function createAPI({ storage, seed, node }: IParams) {
+export function createAPI({ storage, seed, node, extraFee }: IParams) {
 
     const url = (path: string): string => `${node}${path}`;
     const { address, phrase } = seed;
@@ -30,7 +30,7 @@ export function createAPI({ storage, seed, node }: IParams) {
         .then(signature => {
             return post(url('/transactions/broadcast'))
                 .retry(3)
-                .send(data({ data: [{ key: signKey(date), type: 'string', value: signature }], timestamp: date }, phrase))
+                .send(data({ data: [{ key: signKey(date), type: 'string', value: signature }], additionalFee: extraFee, timestamp: date }, phrase))
                 .then(response => waitTransaction(response.body))
                 .then(tap(() => console.log('Success broadcast signature!')))
                 .then(() => list)
@@ -106,7 +106,8 @@ export function createAPI({ storage, seed, node }: IParams) {
                 }, [] as any);
                 const tx = data({
                     timestamp: lastGameTime ? lastGameTime : undefined,
-                    data: dataEntries
+                    data: dataEntries,
+                    additionalFee: extraFee
                 }, seed.phrase);
 
                 return post(url('/transactions/broadcast'))
@@ -168,7 +169,7 @@ export function createAPI({ storage, seed, node }: IParams) {
 
 export function createGameList(start?: number): Promise<Array<Game>> {
     const now = getStartOfDay(start);
-    let time = now;
+    let time = now + GAME_INTERVAL;
     const dateList = [];
 
     do {
@@ -195,5 +196,6 @@ export interface IParams {
     storage: Storage;
     seed: Seed;
     node: string;
+    extraFee: number;
 }
 

@@ -1,6 +1,7 @@
 import { createAPI, getStartOfDay, isTheSameDay, wait } from './index';
 import { Storage } from './storage';
 import { Seed, config, TESTNET_BYTE } from '@waves/signature-generator';
+import { get } from 'superagent';
 
 
 config.set({ networkByte: TESTNET_BYTE });
@@ -14,21 +15,26 @@ const seed = new Seed(process.argv[2]);
 console.log(`Seed is: "${seed.phrase}"`);
 console.log(`Address is: "${seed.address}"`);
 
-const api = createAPI({ storage, node, seed });
 let date: number | null = null;
 
-const run = () => {
-    const today = getStartOfDay();
+get(`${node}/addresses/scriptInfo/${seed.address}`)
+    .then(response => response.body.extraFee)
+    .then(extraFee => {
+        const api = createAPI({ storage, node, seed, extraFee });
 
-    if (!date || !isTheSameDay(today, date)) {
-        api.startDay(today)
-            .then(() => (date = today))
-            .then(run, run);
-    }
+        const run = () => {
+            const today = getStartOfDay();
 
-    api.liveLoop(today)
-        .then(() => wait(1000))
-        .then(run, run);
-};
+            if (!date || !isTheSameDay(today, date)) {
+                api.startDay(today)
+                    .then(() => (date = today))
+                    .then(run, run);
+            }
 
-run();
+            api.liveLoop(today)
+                .then(() => wait(1000))
+                .then(run, run);
+        };
+
+        run();
+    });
