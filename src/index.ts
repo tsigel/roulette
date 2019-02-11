@@ -1,12 +1,22 @@
 import { GAME_INTERVAL } from './constants';
-import { generate, getStartOfDay, isNotEmpty, isTheSameDay, map, sign, tap, toBase58, wait } from './utils/';
+import {
+    generate,
+    getBetBytes,
+    getStartOfDay,
+    isNotEmpty,
+    isTheSameDay,
+    map,
+    sign,
+    toBase58,
+    wait
+} from './utils/';
 import { Game } from './models';
-import { get, post, Response } from 'superagent';
+import { get, post } from 'superagent';
 import { data } from 'waves-transactions';
 import { Storage } from './storage';
 import { libs, Seed } from '@waves/signature-generator';
-import { CELLS } from './cell';
-import { splitEvery, path } from 'ramda';
+import { splitEvery, path, tap } from 'ramda';
+import { sendData } from './utils/node';
 
 export * from './cell';
 export * from './utils';
@@ -30,7 +40,11 @@ export function createAPI({ storage, seed, node, extraFee }: IParams) {
         .then(signature => {
             return post(url('/transactions/broadcast'))
                 .retry(3)
-                .send(data({ data: [{ key: signKey(date), type: 'string', value: signature }], additionalFee: extraFee, timestamp: date }, phrase))
+                .send(data({
+                    data: [{ key: signKey(date), type: 'string', value: signature }],
+                    additionalFee: extraFee,
+                    timestamp: date
+                }, phrase))
                 .then(response => waitTransaction(response.body))
                 .then(tap(() => console.log('Success broadcast signature!')))
                 .then(() => list)
@@ -60,63 +74,72 @@ export function createAPI({ storage, seed, node, extraFee }: IParams) {
                 return list.filter(game => nextGameTime - GAME_INTERVAL * 3 < game.time && game.time < time);
             })
             .then(tap(list => (lastGameTime = list.length ? list[list.length - 1].time : lastGameTime)))
+            .then(list => {
+                const last = lastGameTime || date;
+                const next = last + GAME_INTERVAL;
+                if (next - time < 1000 * 30) {
+                    const stop = String(next - 1000 * 30);
+
+                    return isDataKeyInBlockChain(stop)
+                        .then(inBlockChain => {
+
+                            if (inBlockChain) {
+                                return list;
+                            }
+                            return sendData(node, [
+                                { key: `${toBase58(String(next))}_stop`, type: 'string', value: 'Closed!' }
+                            ], seed, next - time)
+                                .then(waitTransaction)
+                                .then(() => list);
+                        })
+                        .catch(() => list);
+                }
+                return list;
+            })
             .then(sendList);
     };
 
     function sendList(list: Array<Game>): Promise<void> {
-        return Promise.all([
-            map<Game, Game | null>(isGameInBlockChain)(list)
-                .then((list: Array<Game | null>) => list.filter(isNotEmpty)),
-            height()
-        ]).then(([list, height]) => {
+        return map<Game, Game | null>(
+            game => isDataKeyInBlockChain(game.time)
+                .then(inBlockChain => inBlockChain ? null : game)
+        )(list)
+            .then((list: Array<Game | null>) => list.filter(isNotEmpty))
+            .then(list => {
 
-            if (!list.length) {
-                return Promise.resolve();
-            }
+                if (!list.length) {
+                    return Promise.resolve();
+                }
 
-            return map((list: Array<Game>) => {
-                const dataEntries = list.reduce((acc, game) => {
-                    const boolToByte = (value: boolean): number => value ? 1 : 0;
-                    const cell = CELLS[game.result];
-                    const bytes = [
-                        0,
-                        Number(game.result),
-                        boolToByte(cell.isRed),
-                        boolToByte(cell.isEven),
-                        boolToByte(cell.isFirstHalf),
-                        cell.isFirstThird ? 0 : cell.isMiddleThird ? 1 : 2,
-                        cell.isFirstLine ? 0 : cell.isMiddleLine ? 1 : 2
-                    ];
-                    acc.push({
-                        key: String(game.time),
-                        type: 'string',
-                        value: game.result.toString()
-                    });
-                    acc.push({
-                        key: `${toBase58(String(game.time))}height`,
-                        type: 'integer',
-                        value: height
-                    });
-                    acc.push({
-                        key: toBase58(String(game.time)),
-                        type: 'binary',
-                        value: libs.base64.fromByteArray(Uint8Array.from(bytes))
-                    });
-                    return acc;
-                }, [] as any);
-                const tx = data({
-                    timestamp: lastGameTime ? lastGameTime : undefined,
-                    data: dataEntries,
-                    additionalFee: extraFee
-                }, seed.phrase);
+                return map((list: Array<Game>) => {
+                    const dataEntries = list.reduce((acc, game) => {
+                        const bytes = getBetBytes(game.result);
+                        acc.push({
+                            key: String(game.time),
+                            type: 'string',
+                            value: game.result.toString()
+                        });
+                        acc.push({
+                            key: toBase58(String(game.time)),
+                            type: 'binary',
+                            value: libs.base64.fromByteArray(Uint8Array.from(bytes))
+                        });
+                        return acc;
+                    }, [] as any);
 
-                return post(url('/transactions/broadcast'))
-                    .retry(3)
-                    .send(tx)
-                    .then(() => waitTransaction(tx))
-                    .catch(catchError);
-            })(splitEvery(33, list)).then(() => Promise.resolve());
-        });
+                    const tx = data({
+                        timestamp: lastGameTime ? lastGameTime : undefined,
+                        data: dataEntries,
+                        additionalFee: extraFee
+                    }, seed.phrase);
+
+                    return post(url('/transactions/broadcast'))
+                        .retry(3)
+                        .send(tx)
+                        .then(() => waitTransaction(tx))
+                        .catch(catchError);
+                })(splitEvery(33, list)).then(() => Promise.resolve());
+            });
     }
 
     function waitTransaction(tx: { id: string }): Promise<void> {
@@ -128,19 +151,18 @@ export function createAPI({ storage, seed, node, extraFee }: IParams) {
             .catch(() => waitTransaction(tx));
     }
 
-    function height(): Promise<number> {
-        return get(url('/blocks/height'))
-            .then((response: Response & { body: { height: number } }) => response.body.height);
-    }
-
-    function isGameInBlockChain(game: Game): Promise<Game | null> {
-        return get(url(`/addresses/data/${address}/${game.time}`))
-            .then(() => null)
-            .catch(() => game);
+    function isDataKeyInBlockChain(key: string | number): Promise<boolean> {
+        return get(url(`/addresses/data/${address}/${encodeURIComponent(String(key))}`))
+            .then(() => true)
+            .catch(() => false);
     }
 
     function catchError(e: any) {
         lastGameTime = null;
+
+        if (e.stack) {
+            console.error(e.stack);
+        }
 
         console.error('Request Error!');
         console.error('Status: ', path(['status'], e));
