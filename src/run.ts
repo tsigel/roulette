@@ -29,6 +29,7 @@ get(`${node}/addresses/scriptInfo/${seed.address}`)
                 api.startDay(today)
                     .then(() => (date = today))
                     .then(run, run);
+                return null;
             }
 
             api.liveLoop(today)
