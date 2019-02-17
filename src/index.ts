@@ -90,7 +90,7 @@ export function createAPI({ storage, seed, node, extraFee }: IParams) {
                             }
                             return sendData(node, [
                                 { key: `${toBase58(String(next))}_stop`, type: 'string', value: 'Closed!' }
-                            ], seed, next - time)
+                            ], seed, next - 1000 * 30)
                                 .then(waitTransaction)
                                 .then(() => list);
                         })
