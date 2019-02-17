@@ -202,7 +202,7 @@ export function createGameList(start?: number): Promise<Array<Game>> {
     const dateList: Array<{ salt: string; date: number }> = [];
 
     do {
-        const salt = Seed.create(1).phrase;
+        const salt = Seed.create(1).phrase + '-' + Math.floor(Date.now() * Math.random());
         dateList.push({ salt, date: time });
         time = time + GAME_INTERVAL;
     } while (isTheSameDay(time, now));
