@@ -14,7 +14,7 @@ import { Game } from './models';
 import { get, post } from 'superagent';
 import { data } from 'waves-transactions';
 import { Storage } from './storage';
-import { libs, Seed } from '@waves/signature-generator';
+import { libs, Seed, config } from '@waves/signature-generator';
 import { splitEvery, path, tap } from 'ramda';
 import { sendData } from './utils/node';
 
@@ -23,6 +23,8 @@ export * from './utils';
 export * from './constants';
 export * from './storage';
 export * from './models';
+
+config.set({ minimalSeedLength: 1 });
 
 
 export function createAPI({ storage, seed, node, extraFee }: IParams) {
@@ -36,7 +38,7 @@ export function createAPI({ storage, seed, node, extraFee }: IParams) {
         get(url(`/addresses/data/${address}/${encodeURIComponent(signKey(date))}`))
             .then(() => list);
 
-    const addSignature = (date: number) => (list: Array<Game>) => sign(list.map(game => game.result), seed)
+    const addSignature = (date: number) => (list: Array<Game>) => sign(list, seed)
         .then(signature => {
             return post(url('/transactions/broadcast'))
                 .retry(3)
@@ -120,6 +122,11 @@ export function createAPI({ storage, seed, node, extraFee }: IParams) {
                             value: game.result.toString()
                         });
                         acc.push({
+                            key: String(game.time) + '_salt',
+                            type: 'string',
+                            value: game.salt
+                        });
+                        acc.push({
                             key: toBase58(String(game.time)),
                             type: 'binary',
                             value: libs.base64.fromByteArray(Uint8Array.from(bytes))
@@ -192,14 +199,15 @@ export function createAPI({ storage, seed, node, extraFee }: IParams) {
 export function createGameList(start?: number): Promise<Array<Game>> {
     const now = getStartOfDay(start);
     let time = now + GAME_INTERVAL;
-    const dateList = [];
+    const dateList: Array<{ salt: string; date: number }> = [];
 
     do {
-        dateList.push(time);
+        const salt = Seed.create(1).phrase;
+        dateList.push({ salt, date: time });
         time = time + GAME_INTERVAL;
     } while (isTheSameDay(time, now));
 
-    const promiseList = dateList.map(date => generate().then(result => new Game(date, result)));
+    const promiseList = dateList.map(item => generate().then(result => new Game(item.date, result, item.salt)));
     return Promise.all(promiseList);
 }
 

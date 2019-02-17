@@ -37,7 +37,7 @@
     "typescript": "^3.2.4"
   },
   "jest": {
-    "collectCoverage": true,
+    "collectCoverage": false,
     "testEnvironment": "jest-environment-node",
     "coveragePathIgnorePatterns": [
       "/node_modules/",

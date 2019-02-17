@@ -19,7 +19,7 @@ export class Storage implements IStorage<Record<number, Array<Game>>> {
 
     get(key: number): Promise<Array<Game>> {
         return this._storage[key] ? Promise.resolve(this._storage[key]) : readJSON(path(key))
-            .then(list => list.map((item: Game) => new Game(item.time, item.result)))
+            .then(list => list.map((item: Game) => new Game(item.time, item.result, item.salt)))
             .catch(() => []);
     }
 

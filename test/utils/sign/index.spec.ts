@@ -1,26 +1,29 @@
 import { Seed, utils } from '@waves/signature-generator';
 import { sign, Generator } from '../../../src';
 
+const list = [
+    { time: 0, salt: 'test', result: 12 },
+    { time: 0, salt: 'test-2', result: 15 }
+];
+
+const seed = Seed.create();
 
 describe('Sign', () => {
 
     it('Check get bytes from list of number', done => {
 
-        const list = [2, 15, 6, 33, 23, 12, 2];
+        const targetBytes = Uint8Array.from([
+            0, 2, 0, 4, 116, 101, 115, 116, 12, 0, 6, 116, 101, 115, 116, 45, 50, 15
+        ]);
+
         new Generator({ list }).getBytes().then(bytes => {
-            const result = [
-                ...[0, list.length],
-                ...list
-            ];
-            expect(bytes).toEqual(Uint8Array.from(result));
+            expect(bytes).toEqual(targetBytes);
             done();
         });
     });
 
     it('Check generate signature', done => {
 
-        const list = [2, 15, 6, 33, 23, 12, 2];
-        const seed = Seed.create();
 
         Promise.all([
             new Generator({ list }).getBytes(),
